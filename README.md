@@ -7,7 +7,7 @@
 
 An end-to-end, browser-based AI Voice Customer Support Agent built for **Aura Skincare**, a premium organic Indian D2C brand. Built for the **Datastraw Technologies AI + Tech Intern / Full Stack AI Developer Intern** assessment.
 
-Evaluators can click **"Start Call"**, speak naturally with **Aria** (an Indian customer support specialist), check real-time order tracking, test cancellation policies, interrupt Aria mid-sentence (barge-in), and review structured post-call telemetry.
+Evaluators can click **"Start Call"**, speak naturally with **Aria** (an Indian customer support specialist), check real-time order tracking, test cancellation policies, and review structured post-call telemetry.
 
 ---
 
@@ -30,10 +30,10 @@ Evaluators can click **"Start Call"**, speak naturally with **Aria** (an Indian 
    - **Shipping & COD**: Free shipping above ₹499 (₹50 fee below); COD available up to ₹2,500.
    - **Out-of-Scope Protection**: Gracefully redirects non-skincare queries (e.g., flight bookings, weather).
 
-4. **Live State Indicators & Barge-In (Interruption Handling)**:
+4. **Live State Indicators & Natural Turn-Taking**:
    - Clear visual indicator: `Ready` ⚪ | `Listening` 🟢 | `Thinking` 🟡 | `Speaking` 🔵.
    - Dynamic pulsing voice orb and animated audio equalizer.
-   - Interruption handling: User can speak or tap anytime to halt Aria's speech and take the floor.
+   - Smooth turn-taking: Visual feedback and mic coordination ensure crisp conversation without echo.
 
 5. **Evaluator-Friendly Testing Panel**:
    - On-screen quick test cards for `ORD-101`, `ORD-102`, and `ORD-103`.
@@ -60,7 +60,7 @@ Evaluators can click **"Start Call"**, speak naturally with **Aria** (an Indian 
 │  • Web Speech API (STT - Indian English 'en-IN')            │
 │  • Voice Orb & Waveform State Visualizer                    │
 │  • Test Orders Card (ORD-101, 102, 103) + 1-Click Prompts   │
-│  • HTML5 Audio Player with Interruption / Barge-in          │
+│  • HTML5 Audio Player with Smooth Turn-Taking               │
 └──────────────────────────────▲──────────────────────────────┘
                                │ REST / Audio Stream
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -150,7 +150,7 @@ The most challenging aspect was **achieving low-latency conversational turn-taki
 - *The Problem*: In conversational voice interfaces, awkward silences break immersion. Furthermore, LLMs love generating markdown (`*bold*`, `- bullet points`), currency symbols (`₹699`), and acronyms (`ORD-101`) that sound unintelligible when read raw by a speech synthesizer ("asterisk rupee 699").
 - *The Solution*: 
   1. Built an audio text normalizer in `app/tts.py` that strips markdown, expands currency symbols (`"Rupees 699"`), and spaces out order IDs (`"O-R-D 1 0 1"`) for crisp audio clarity.
-  2. Implemented a 4-state visual machine (`Idle` $\rightarrow$ `Listening` $\rightarrow$ `Thinking` $\rightarrow$ `Speaking`) with client-side audio queuing and instant barge-in interruption.
+  2. Implemented a 4-state visual machine (`Idle` $\rightarrow$ `Listening` $\rightarrow$ `Thinking` $\rightarrow$ `Speaking`) with client-side audio queuing and synchronized microphone turn-taking to prevent speaker feedback.
 
 ### 3. If you had one more week to work on this, what would you improve first and why?
 1. **Full-Duplex WebRTC Streaming (Multimodal Live API)**: Replace the REST turn-based audio pipeline with a persistent WebRTC connection (e.g., Gemini Live API or LiveKit + Deepgram). This would reduce turnaround latency from ~1.2s to sub-500ms and enable natural mid-sentence barge-in.

@@ -103,7 +103,7 @@ function setState(state) {
   } else if (state === STATES.SPEAKING) {
     stateText.textContent = "Aria is Speaking...";
     waveform.classList.add("active");
-    voiceHint.innerHTML = '<span style="color: #b45309; font-weight: 600;">Aria speaking...</span> Tap the glowing orb or any prompt to interrupt';
+    voiceHint.innerHTML = '<span style="color: #b45309; font-weight: 600;">Aria is speaking...</span>';
     setOrbIcon("volume-2");
   } else if (state === STATES.PAUSED) {
     stateText.textContent = "Mic Paused";
@@ -352,34 +352,9 @@ function setupSpeechRecognition() {
       if (window.lucide) lucide.createIcons();
     }
 
-    const isSpeakingNow = (currentState === STATES.SPEAKING || currentAudio !== null);
-    
-    // 2. Barge-in detection: ONLY if customer deliberately speaks to interrupt Aria
-    if (isSpeakingNow && (interim.length >= 3 || final.length >= 3)) {
-      const activeText = normalizeSpokenNumbers((final || interim).toLowerCase().trim());
-      const activeWords = activeText.split(/\s+/).filter(w => w.length > 0);
-
-      // Must be an intentional interruption:
-      // Either contains a barge-in command ("wait", "stop", "hold on", "cancel", "ruko", etc.)
-      // OR contains a customer intent keyword ("order", "101", "103", "pincode", "delivery", etc.)
-      const hasBargeInCmd = activeWords.some(w => BARGE_IN_COMMANDS.has(w));
-      const hasIntentKw = activeWords.some(w => INTENT_WORDS.has(w));
-
-      if (!hasBargeInCmd && !hasIntentKw) {
-        // Speaker vibration / acoustic bleed during speech: ignore completely
-        return;
-      }
-
-      if (isSelfEcho(activeText)) {
-        console.log("Self-echo filtered out (Aria heard herself):", activeText);
-        return;
-      }
-
-      console.log("Real customer barge-in detected! Stopping Aria for:", activeText);
-      stopAgentSpeaking();
-      if (final && final.length >= 3 && !isSelfEcho(final)) {
-        dispatchUtterance(normalizeSpokenNumbers(final));
-      }
+    // 2. Ignore microphone while Aria is speaking or thinking
+    // This completely eliminates self-echo and keeps turn-taking clean and reliable
+    if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null) {
       return;
     }
 
@@ -663,10 +638,8 @@ async function speakText(text, thisTurnId) {
   lastAgentSpokenText = text;
   lastAgentSpokenTime = Date.now();
 
-  // 2. Ensure speech recognition stays active so user CAN interrupt by talking
-  if (!isRecognitionRunning) {
-    startListening();
-  }
+  // 2. Stop mic listening while Aria speaks to ensure zero speaker bleed
+  stopListening();
 
   try {
     const ttsRes = await fetch("/api/tts", {
@@ -815,7 +788,6 @@ async function startCall() {
   if (!recognition) {
     recognition = setupSpeechRecognition();
   }
-  startListening(); // Immediately start listening so talking-based barge-in is active
 
   const greeting = "Hello and welcome to Aura Skincare, my name is Aria. How may I assist you with your orders or products today?";
   recordAgentUtterance(greeting); // Prime greeting in echo prevention history
