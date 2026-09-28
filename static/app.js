@@ -245,12 +245,9 @@ function setupSpeechRecognition() {
   }
 
   const sr = new SpeechRecognition();
-  sr.continuous = true;       // Continuous listening enables barge-in
-  sr.interimResults = true;   // Real-time hearing feedback & instant responsiveness
-  
-  // Use user's English locale or fall back to standard en-US for maximum recognition accuracy
-  const userLang = navigator.language || "en-US";
-  sr.lang = userLang.startsWith("en") ? userLang : "en-US";
+  sr.continuous = false;      // Turn-based: captures full utterance without splitting numbers
+  sr.interimResults = true;   // Real-time hearing feedback while speaking
+  sr.lang = "en-IN";          // Optimized for Indian English accents and numbers
 
   sr.onstart = () => {
     isRecognitionRunning = true;
@@ -262,11 +259,14 @@ function setupSpeechRecognition() {
 
   sr.onresult = (event) => {
     if (!isCallActive || isCallPaused) return;
+    if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null) {
+      return;
+    }
 
     let interim = "";
     let final = "";
 
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
+    for (let i = 0; i < event.results.length; ++i) {
       const part = event.results[i];
       if (part.isFinal) {
         final += part[0].transcript;
@@ -275,48 +275,19 @@ function setupSpeechRecognition() {
       }
     }
 
-    interim = interim.trim();
-    final = final.trim();
-
     // 1. Live feedback while customer speaks
-    const liveText = (accumulatedCustomerSpeech + " " + (final || interim)).trim();
+    const liveText = (final || interim).trim();
     if (liveText && currentState === STATES.LISTENING) {
       const displayLive = normalizeSpokenNumbers(liveText);
       voiceHint.innerHTML = `<span class="live-hearing-badge"><i data-lucide="mic" style="width:14px;height:14px;display:inline;"></i> Hearing: "${displayLive}..."</span>`;
       if (window.lucide) lucide.createIcons();
-
-      // If only interim is coming in, keep a safety timeout so user utterance is never lost
-      if (!final && interim.length >= 2) {
-        if (customerSpeechDebounceTimer) clearTimeout(customerSpeechDebounceTimer);
-        customerSpeechDebounceTimer = setTimeout(() => {
-          const fullTranscript = normalizeSpokenNumbers((accumulatedCustomerSpeech + " " + interim).trim());
-          accumulatedCustomerSpeech = "";
-          if (fullTranscript.length >= 2 && !isSelfEcho(fullTranscript)) {
-            dispatchUtterance(fullTranscript);
-          }
-        }, 1100);
-      }
     }
 
-    // 2. Ignore microphone while Aria is speaking or thinking
-    if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null) {
-      return;
-    }
-
-    // 3. Process final user speech with 750ms debounce
-    // This allows customer to naturally speak numbers (e.g. 'order 101' or 'order 10 3') without being cut off
-    if (final && final.length >= 1) {
-      accumulatedCustomerSpeech = (accumulatedCustomerSpeech + " " + final).trim();
-      accumulatedCustomerSpeech = normalizeSpokenNumbers(accumulatedCustomerSpeech);
-
-      if (customerSpeechDebounceTimer) clearTimeout(customerSpeechDebounceTimer);
-      customerSpeechDebounceTimer = setTimeout(() => {
-        const fullTranscript = accumulatedCustomerSpeech.trim();
-        accumulatedCustomerSpeech = "";
-        if (fullTranscript.length >= 1 && !isSelfEcho(fullTranscript)) {
-          dispatchUtterance(fullTranscript);
-        }
-      }, 750);
+    // 2. Dispatch complete utterance when finalized
+    if (final && final.trim().length >= 1) {
+      const fullTranscript = normalizeSpokenNumbers(final.trim());
+      console.log("Customer speech finalized:", fullTranscript);
+      dispatchUtterance(fullTranscript);
     }
   };
 
@@ -328,17 +299,16 @@ function setupSpeechRecognition() {
       alert("Microphone permission was not allowed. Please click the camera/mic icon in your browser address bar to allow microphone access, then click 'Start Call'.");
       return;
     }
-    // For 'no-speech', 'network', 'aborted', schedule clean restart
-    if (isCallActive && !isCallPaused) {
-      scheduleRestart(250);
+    // For 'no-speech', restart quietly so mic stays open for customer
+    if (isCallActive && !isCallPaused && currentState === STATES.LISTENING) {
+      scheduleRestart(200);
     }
   };
 
   sr.onend = () => {
     isRecognitionRunning = false;
-    console.log("Speech recognition session ended.");
-    // Keep listening hot if call is still active
-    if (isCallActive && !isCallPaused) {
+    // If Aria is not speaking/thinking and call is active, restart listening for customer
+    if (isCallActive && !isCallPaused && currentState === STATES.LISTENING && !currentAudio) {
       scheduleRestart(150);
     }
   };

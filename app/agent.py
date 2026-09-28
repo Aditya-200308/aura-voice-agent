@@ -608,12 +608,6 @@ def _resilient_policy_engine(session: ConversationSession, user_text: str) -> Di
         session.add_message("agent", resp)
         return {"response_text": resp, "tool_used": tool_used, "order_id": target_oid}
 
-    elif bool(re.search(r'\b(?:order|ord)\s*(?:id\s+|number\s+|#\s*)?(?:1|10|one|ten)\b', text, re.IGNORECASE)):
-        # PARTIAL ORDER ID HANDLING: User said 'order 1' or 'order 10'
-        resp = "Our orders are 3 digits starting with 10: ORD-101, ORD-102, or ORD-103. Did you mean order 101, 102, or 103?"
-        session.add_message("agent", resp)
-        return {"response_text": resp, "tool_used": None, "order_id": None}
-
     elif has_tracking_keywords:
         # AMBIGUOUS REQUEST HANDLING: Tracking inquiry without an order ID
         if not order_id:
