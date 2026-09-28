@@ -184,23 +184,32 @@ function normalizeTextForEcho(str) {
 function normalizeSpokenNumbers(text) {
   if (!text) return "";
   let t = text;
-  // Convert spelled out order digits:
-  t = t.replace(/\b(?:one|1)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|0)?\s*(?:three|3)\b/gi, "103");
-  t = t.replace(/\b(?:one|1)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|0)?\s*(?:two|2)\b/gi, "102");
-  t = t.replace(/\b(?:one|1)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|0)?\s*(?:one|1)\b/gi, "101");
-  
-  // Spaced digits from STT: "10 3" -> "103", "1 0 3" -> "103", etc.
+
+  // 103 variations (e.g. 'one zero three', 'one oh three', 'one o three', '1 0 3', '10 3')
+  t = t.replace(/\b(?:one|1|ek)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|o|naught|0)?\s*(?:three|3|teen)\b/gi, "103");
+  t = t.replace(/\bone[- ]*(?:o|zero|oh)[- ]*three\b/gi, "103");
   t = t.replace(/\b1\s*0\s*3\b/g, "103");
   t = t.replace(/\b10\s*3\b/g, "103");
+  t = t.replace(/\b1\s*03\b/g, "103");
+
+  // 102 variations (e.g. 'one zero two', 'one oh two', 'one o two', '1 0 2', '10 2')
+  t = t.replace(/\b(?:one|1|ek)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|o|naught|0)?\s*(?:two|2|do)\b/gi, "102");
+  t = t.replace(/\bone[- ]*(?:o|zero|oh)[- ]*two\b/gi, "102");
   t = t.replace(/\b1\s*0\s*2\b/g, "102");
   t = t.replace(/\b10\s*2\b/g, "102");
+  t = t.replace(/\b1\s*02\b/g, "102");
+
+  // 101 variations (e.g. 'one zero one', 'one oh one', 'one o one', '1 0 1', '10 1')
+  t = t.replace(/\b(?:one|1|ek)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|o|naught|0)?\s*(?:one|1|ek)\b/gi, "101");
+  t = t.replace(/\bone[- ]*(?:o|zero|oh)[- ]*one\b/gi, "101");
   t = t.replace(/\b1\s*0\s*1\b/g, "101");
   t = t.replace(/\b10\s*1\b/g, "101");
-  
+  t = t.replace(/\b1\s*01\b/g, "101");
+
   return t;
 }
 
-// ROLLING HISTORY OF RECENT AGENT UTTERANCES TO PREVENT SELF-ECHO
+// ROLLING HISTORY OF RECENT AGENT UTTERANCES
 let agentUtteranceHistory = [];
 
 function recordAgentUtterance(text) {
@@ -216,88 +225,13 @@ function recordAgentUtterance(text) {
   }
 }
 
-// CHECK IF RECOGNIZED AUDIO IS JUST ARIA'S OWN VOICE COMING FROM SPEAKERS
+// CLEAN ECHO PREVENTION: Only active while Aria is speaking
+// When Aria is silent, all recognized speech is 100% genuine customer speech!
 function isSelfEcho(userTranscript) {
-  if (!userTranscript) return false;
-
-  const cleanInput = normalizeTextForEcho(userTranscript);
-  if (!cleanInput) return true;
-
-  // 1. Explicit Customer Barge-In Command Words:
-  // If customer says "wait", "hold on", "stop", etc. to interrupt:
-  const BARGE_IN_COMMANDS = [
-    "wait", "hold on", "stop", "pause", "listen", "quiet", "shh",
-    "hang on", "excuse me", "one second", "one sec", "shut up", "enough", "ruko", "suno"
-  ];
-  for (const cmd of BARGE_IN_COMMANDS) {
-    if (cleanInput.includes(cmd)) {
-      // Check if Aria said this exact command word in recent history
-      const ariaSaidIt = agentUtteranceHistory.some(item => normalizeTextForEcho(item.text).includes(cmd));
-      if (!ariaSaidIt) {
-        console.log("Customer explicit barge-in command detected:", cmd, "in:", cleanInput);
-        return false; // Real customer barge-in!
-      }
-    }
+  if (!userTranscript || !userTranscript.trim()) return true;
+  if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null) {
+    return true;
   }
-
-  const inputWords = cleanInput.split(" ").filter(w => w.length > 0);
-  if (inputWords.length === 0) return true;
-
-  // 2. CHECK AGAINST ALL AGENT UTTERANCES IN HISTORY:
-  // If the recognized audio matches what Aria said, IT IS ECHO!
-  // No matter when it arrives, a customer will never repeat Aria's greeting or replies!
-  for (const item of agentUtteranceHistory) {
-    const cleanAgent = normalizeTextForEcho(item.text);
-    if (!cleanAgent) continue;
-
-    // Substring match: Input is inside agent sentence OR agent sentence is inside input
-    if (cleanAgent.includes(cleanInput) || (cleanInput.length >= 8 && cleanInput.includes(cleanAgent))) {
-      console.log("Self-echo blocked (agent substring match):", cleanInput);
-      return true;
-    }
-
-    // Word overlap match
-    const agentWords = cleanAgent.split(" ").filter(w => w.length > 0);
-    const agentWordSet = new Set(agentWords);
-
-    let matchCount = 0;
-    for (const w of inputWords) {
-      if (agentWordSet.has(w)) matchCount++;
-    }
-
-    const overlapRatio = matchCount / inputWords.length;
-    // If 35% or more of customer words match what Aria said, it's echo from the speakers!
-    if (overlapRatio >= 0.35) {
-      console.log(`Self-echo blocked (${Math.round(overlapRatio * 100)}% words match Aria):`, cleanInput);
-      return true;
-    }
-
-    // If input is short (<= 2 words) and matches Aria words:
-    if (inputWords.length <= 2 && matchCount >= 1) {
-      console.log("Self-echo blocked (short phrase matching Aria):", cleanInput);
-      return true;
-    }
-  }
-
-  // 3. If Aria is ACTIVELY SPEAKING right now:
-  const isSpeakingNow = (currentState === STATES.SPEAKING || currentAudio !== null);
-  if (isSpeakingNow) {
-    // If during speech the audio has no customer intent words and no barge-in command,
-    // it is background acoustic bleed
-    const INTENT_WORDS = new Set([
-      "where", "track", "cancel", "status", "delivery", "pincode", "cash", "cod",
-      "return", "refund", "recommend", "suggest", "order", "ord", "help", "price",
-      "cost", "fee", "address", "product", "serum", "cream", "skin", "acne",
-      "101", "102", "103", "brand", "brands", "derma", "men", "mens",
-      "change", "replace", "shipping", "charge", "policy", "rules", "rule"
-    ]);
-    const hasIntentWord = inputWords.some(w => INTENT_WORDS.has(w));
-    if (!hasIntentWord) {
-      console.log("Self-echo blocked during active speech (no customer intent):", cleanInput);
-      return true;
-    }
-  }
-
   return false;
 }
 
@@ -344,29 +278,34 @@ function setupSpeechRecognition() {
     interim = interim.trim();
     final = final.trim();
 
-    // 1. Live feedback while customer speaks (suppress if Aria is speaking her own words)
-    if (interim && !isSelfEcho(interim) && currentState === STATES.LISTENING) {
-      if (customerSpeechDebounceTimer) clearTimeout(customerSpeechDebounceTimer);
-      const displayInterim = normalizeSpokenNumbers(interim);
-      voiceHint.innerHTML = `<span class="live-hearing-badge"><i data-lucide="mic" style="width:14px;height:14px;display:inline;"></i> Hearing: "${displayInterim}..."</span>`;
+    // 1. Live feedback while customer speaks
+    const liveText = (accumulatedCustomerSpeech + " " + (final || interim)).trim();
+    if (liveText && currentState === STATES.LISTENING) {
+      const displayLive = normalizeSpokenNumbers(liveText);
+      voiceHint.innerHTML = `<span class="live-hearing-badge"><i data-lucide="mic" style="width:14px;height:14px;display:inline;"></i> Hearing: "${displayLive}..."</span>`;
       if (window.lucide) lucide.createIcons();
+
+      // If only interim is coming in, keep a safety timeout so user utterance is never lost
+      if (!final && interim.length >= 2) {
+        if (customerSpeechDebounceTimer) clearTimeout(customerSpeechDebounceTimer);
+        customerSpeechDebounceTimer = setTimeout(() => {
+          const fullTranscript = normalizeSpokenNumbers((accumulatedCustomerSpeech + " " + interim).trim());
+          accumulatedCustomerSpeech = "";
+          if (fullTranscript.length >= 2 && !isSelfEcho(fullTranscript)) {
+            dispatchUtterance(fullTranscript);
+          }
+        }, 1100);
+      }
     }
 
     // 2. Ignore microphone while Aria is speaking or thinking
-    // This completely eliminates self-echo and keeps turn-taking clean and reliable
     if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null) {
       return;
     }
 
-    // 3. Process final user speech with 550ms debounce
-    // This collects split digit fragments like "order 10" + "3" into "order 103" before submitting!
-    if (final && final.length >= 2) {
-      if (isSelfEcho(final)) {
-        console.log("Self-echo filtered out (final):", final);
-        return;
-      }
-
-      // Append new finalized fragment
+    // 3. Process final user speech with 750ms debounce
+    // This allows customer to naturally speak numbers (e.g. 'order 101' or 'order 10 3') without being cut off
+    if (final && final.length >= 1) {
       accumulatedCustomerSpeech = (accumulatedCustomerSpeech + " " + final).trim();
       accumulatedCustomerSpeech = normalizeSpokenNumbers(accumulatedCustomerSpeech);
 
@@ -374,10 +313,10 @@ function setupSpeechRecognition() {
       customerSpeechDebounceTimer = setTimeout(() => {
         const fullTranscript = accumulatedCustomerSpeech.trim();
         accumulatedCustomerSpeech = "";
-        if (fullTranscript.length >= 2 && !isSelfEcho(fullTranscript)) {
+        if (fullTranscript.length >= 1 && !isSelfEcho(fullTranscript)) {
           dispatchUtterance(fullTranscript);
         }
-      }, 550);
+      }, 750);
     }
   };
 
@@ -414,8 +353,10 @@ function dispatchUtterance(transcript) {
   }
 
   const now = Date.now();
-  // Duplicate guard: prevent sending identical text twice within 2.5 seconds
-  if (transcript.toLowerCase() === lastCustomerTranscript.toLowerCase() && (now - lastCustomerTranscriptTime) < 2500) {
+  // Duplicate guard: prevent sending identical text twice within 1000ms unless agent spoke in between
+  if (transcript.toLowerCase() === lastCustomerTranscript.toLowerCase() && 
+      (now - lastCustomerTranscriptTime) < 1000 &&
+      lastCustomerTranscriptTime > lastAgentSpokenTime) {
     console.log("Duplicate utterance suppressed:", transcript);
     return;
   }

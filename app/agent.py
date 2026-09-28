@@ -112,16 +112,23 @@ def normalize_spoken_order_numbers(text: str) -> str:
         return ""
     t = text.lower()
     # Spoken number phrases (English & Hinglish)
-    t = re.sub(r'\b(?:one|1)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|0)?\s*(?:three|3)\b', '103', t)
-    t = re.sub(r'\b(?:one|1)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|0)?\s*(?:two|2)\b', '102', t)
-    t = re.sub(r'\b(?:one|1)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|0)?\s*(?:one|1)\b', '101', t)
-    # Spaced digits from speech-to-text
+    t = re.sub(r'\b(?:one|1|ek)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|o|naught|0)?\s*(?:three|3|teen)\b', '103', t)
+    t = re.sub(r'\bone[- ]*(?:o|zero|oh)[- ]*three\b', '103', t)
     t = re.sub(r'\b1\s*0\s*3\b', '103', t)
     t = re.sub(r'\b10\s*3\b', '103', t)
+    t = re.sub(r'\b1\s*03\b', '103', t)
+
+    t = re.sub(r'\b(?:one|1|ek)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|o|naught|0)?\s*(?:two|2|do)\b', '102', t)
+    t = re.sub(r'\bone[- ]*(?:o|zero|oh)[- ]*two\b', '102', t)
     t = re.sub(r'\b1\s*0\s*2\b', '102', t)
     t = re.sub(r'\b10\s*2\b', '102', t)
+    t = re.sub(r'\b1\s*02\b', '102', t)
+
+    t = re.sub(r'\b(?:one|1|ek)\s*(?:hundred|sau)?\s*(?:and)?\s*(?:zero|oh|o|naught|0)?\s*(?:one|1|ek)\b', '101', t)
+    t = re.sub(r'\bone[- ]*(?:o|zero|oh)[- ]*one\b', '101', t)
     t = re.sub(r'\b1\s*0\s*1\b', '101', t)
     t = re.sub(r'\b10\s*1\b', '101', t)
+    t = re.sub(r'\b1\s*01\b', '101', t)
     return t
 
 
@@ -601,8 +608,8 @@ def _resilient_policy_engine(session: ConversationSession, user_text: str) -> Di
         session.add_message("agent", resp)
         return {"response_text": resp, "tool_used": tool_used, "order_id": target_oid}
 
-    elif bool(re.search(r'\b(?:order|ord)\s*(?:id\s+|number\s+|#\s*)?(?:10|ten)\b', text, re.IGNORECASE)):
-        # PARTIAL ORDER ID HANDLING: User said 'order 10' or Speech-to-Text cut off the 3rd digit
+    elif bool(re.search(r'\b(?:order|ord)\s*(?:id\s+|number\s+|#\s*)?(?:1|10|one|ten)\b', text, re.IGNORECASE)):
+        # PARTIAL ORDER ID HANDLING: User said 'order 1' or 'order 10'
         resp = "Our orders are 3 digits starting with 10: ORD-101, ORD-102, or ORD-103. Did you mean order 101, 102, or 103?"
         session.add_message("agent", resp)
         return {"response_text": resp, "tool_used": None, "order_id": None}
