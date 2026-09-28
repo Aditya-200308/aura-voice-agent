@@ -14,7 +14,7 @@
 ---
 
 ### 2. 💻 GitHub Repository
-- **Repository URL**: `https://github.com/<your-username>/aura-voice-agent`
+- **Repository URL**: `https://github.com/Aditya-200308/aura-voice-agent`
 - **Branch**: `main`
 - **Included Deliverables**:
   - `README.md` (comprehensive architecture diagram, Section 9 in-depth answers, testing matrix, quickstart guide)
@@ -42,4 +42,4 @@
 
 ### 5. 🔗 LinkedIn Profile
 - **Candidate Name**: Aditya Suvarna
-- **LinkedIn Profile**: `https://www.linkedin.com/in/<your-username>`
+- **LinkedIn Profile**: `https://www.linkedin.com/in/aditya-suvarna-b19282294/`
