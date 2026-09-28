@@ -4,8 +4,22 @@ Serves static frontend and API endpoints for chat, TTS, orders, and post-call an
 """
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Ensure UTF-8 stdout/stderr on Windows console to prevent UnicodeEncodeError on ₹ (rupee) or other unicode symbols
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse
@@ -85,9 +99,19 @@ async def chat_endpoint(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
     
-    print(f"\n>>> [CHAT RECEIVED] session={req.session_id} message={req.message!r}")
+    try:
+        print(f"\n>>> [CHAT RECEIVED] session={req.session_id} message={req.message!r}")
+    except Exception:
+        pass
+
     result = await process_user_turn(req.session_id, req.message)
-    print(f"<<< [AGENT REPLY] response={result.get('response_text')!r}\n")
+
+    try:
+        reply_preview = result.get('response_text', '')
+        print(f"<<< [AGENT REPLY] response={reply_preview!r}\n")
+    except Exception:
+        pass
+
     return result
 
 

@@ -31,6 +31,7 @@ const INTENT_WORDS = new Set([
 
 // Real-time Audio Visualizer
 let audioCtx = null;
+let currentAgentSourceNode = null;
 let analyser = null;
 let micStream = null;
 let visualizerAnimationId = null;
@@ -130,12 +131,22 @@ function setOrbIcon(iconName, spinning = false) {
 function stopAgentSpeaking() {
   currentTurnId++; // Invalidate any ongoing network requests
   lastAgentSpokenTime = Date.now();
+
+  if (currentAgentSourceNode) {
+    try {
+      currentAgentSourceNode.stop();
+      currentAgentSourceNode.disconnect();
+    } catch (e) {}
+    currentAgentSourceNode = null;
+  }
   
   if (currentAudio) {
     try {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-      currentAudio.src = "";
+      if (typeof currentAudio.pause === "function") {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio.src = "";
+      }
     } catch (e) {}
     currentAudio = null;
   }
@@ -151,12 +162,6 @@ function stopAgentSpeaking() {
   accumulatedCustomerSpeech = "";
   
   waveform.classList.remove("active");
-  if (isCallActive && !isCallPaused) {
-    setState(STATES.LISTENING);
-    if (!isRecognitionRunning) {
-      startListening();
-    }
-  }
 }
 
 // PHONETIC NORMALIZER FOR SPEECH RECOGNITION VARIANTS
@@ -350,12 +355,13 @@ function scheduleRestart(delay = 150) {
 function startListening() {
   if (!isCallActive || isCallPaused || !recognition) return;
   if (isRecognitionRunning) return;
+  if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null || currentAgentSourceNode !== null) {
+    return;
+  }
   try {
     recognition.start();
     isRecognitionRunning = true;
-    if (currentState !== STATES.SPEAKING && currentState !== STATES.THINKING) {
-      setState(STATES.LISTENING);
-    }
+    setState(STATES.LISTENING);
   } catch (e) {
     console.log("startListening notice:", e.message);
   }
@@ -494,14 +500,10 @@ function togglePauseCall() {
 
 // PROCESS USER UTTERANCE
 async function handleUserUtterance(userText) {
-  // 1. Immediately cut off any playing audio
+  // 1. Immediately cut off any playing audio and close microphone while thinking
+  stopListening();
   stopAgentSpeaking();
 
-  if (isSelfEcho(userText)) {
-    console.log("Self-echo blocked in handleUserUtterance:", userText);
-    return;
-  }
-  
   const thisTurnId = ++currentTurnId;
   setState(STATES.THINKING);
   appendTranscriptMessage("customer", userText);
@@ -522,8 +524,16 @@ async function handleUserUtterance(userText) {
       return;
     }
 
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Chat API responded with status ${res.status}: ${errBody}`);
+    }
+
     const data = await res.json();
     const agentReply = data.response_text;
+    if (!agentReply || !agentReply.trim()) {
+      throw new Error("Chat API returned empty response_text");
+    }
 
     appendTranscriptMessage("agent", agentReply);
     await speakText(agentReply, thisTurnId);
@@ -534,6 +544,102 @@ async function handleUserUtterance(userText) {
     const fallbackText = "I apologize, but I had a brief connection issue. Could you please repeat that?";
     appendTranscriptMessage("agent", fallbackText);
     await speakText(fallbackText, thisTurnId);
+  }
+}
+
+// PLAY AUDIO BUFFER VIA WEB AUDIO API (IMMUNE TO AUTOPLAY RESTRICTIONS ON MULTI-TURN CALLS)
+async function playAudioBuffer(arrayBuffer, thisTurnId) {
+  if (thisTurnId !== currentTurnId || !isCallActive) return;
+
+  // 1. Preferred: Web Audio API (unlocked on Start Call, never blocked on subsequent turns)
+  if (audioCtx) {
+    if (audioCtx.state === "suspended") {
+      try { await audioCtx.resume(); } catch (e) {}
+    }
+    try {
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+      if (thisTurnId !== currentTurnId || !isCallActive) return;
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.95;
+
+      source.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      currentAgentSourceNode = source;
+      currentAudio = source;
+
+      return new Promise((resolve) => {
+        source.onended = () => {
+          if (currentAgentSourceNode === source) {
+            currentAgentSourceNode = null;
+          }
+          if (currentAudio === source) {
+            currentAudio = null;
+          }
+          lastAgentSpokenTime = Date.now();
+          onAgentFinishedSpeaking(thisTurnId);
+          resolve();
+        };
+        source.start(0);
+      });
+    } catch (decodeErr) {
+      console.warn("Web Audio decode failed, falling back to HTMLAudioElement:", decodeErr);
+    }
+  }
+
+  // 2. Fallback: HTMLAudioElement
+  return new Promise((resolve) => {
+    const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    audio.volume = 0.95;
+    currentAudio = audio;
+
+    const cleanup = () => {
+      URL.revokeObjectURL(audioUrl);
+      if (currentAudio === audio) currentAudio = null;
+      lastAgentSpokenTime = Date.now();
+      onAgentFinishedSpeaking(thisTurnId);
+      resolve();
+    };
+
+    audio.onended = cleanup;
+    audio.onerror = (e) => {
+      console.error("HTML Audio playback error:", e);
+      cleanup();
+    };
+
+    audio.play().catch((playErr) => {
+      console.error("HTML Audio play() rejected:", playErr);
+      cleanup();
+    });
+  });
+}
+
+function onAgentFinishedSpeaking(thisTurnId) {
+  // Clear any pending recognition buffer so Aria's final syllable doesn't bleed into customer turn
+  try {
+    if (recognition && isRecognitionRunning) {
+      recognition.abort();
+      isRecognitionRunning = false;
+    }
+  } catch (e) {}
+
+  if (isCallActive && thisTurnId === currentTurnId) {
+    if (isCallPaused) {
+      setState(STATES.PAUSED);
+    } else {
+      // Settle room reverberation (300ms), then open clean listening session for customer
+      setTimeout(() => {
+        if (isCallActive && !isCallPaused && !currentAudio && !currentAgentSourceNode) {
+          setState(STATES.LISTENING);
+          startListening();
+        }
+      }, 300);
+    }
   }
 }
 
@@ -567,53 +673,8 @@ async function speakText(text, thisTurnId) {
       return; // Interrupted while audio was downloading
     }
 
-    const blob = await ttsRes.blob();
-    const audioUrl = URL.createObjectURL(blob);
-    currentAudio = new Audio(audioUrl);
-    currentAudio.volume = 0.85;
-
-    currentAudio.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-      currentAudio = null;
-      lastAgentSpokenTime = Date.now();
-
-      // Clear any pending recognition buffer so Aria's final syllable doesn't bleed into customer turn
-      try {
-        if (recognition && isRecognitionRunning) {
-          recognition.abort();
-          isRecognitionRunning = false;
-        }
-      } catch (e) {}
-
-      if (isCallActive && thisTurnId === currentTurnId) {
-        if (isCallPaused) {
-          setState(STATES.PAUSED);
-        } else {
-          // Wait 300ms for room reverberation to settle, then open clean listening session for customer
-          setTimeout(() => {
-            if (isCallActive && !isCallPaused && !currentAudio) {
-              setState(STATES.LISTENING);
-              startListening();
-            }
-          }, 300);
-        }
-      }
-    };
-
-    currentAudio.onerror = (e) => {
-      console.error("Audio playback error:", e);
-      currentAudio = null;
-      if (isCallActive && thisTurnId === currentTurnId) {
-        if (isCallPaused) {
-          setState(STATES.PAUSED);
-        } else {
-          setState(STATES.LISTENING);
-          startListening();
-        }
-      }
-    };
-
-    await currentAudio.play();
+    const arrayBuffer = await ttsRes.arrayBuffer();
+    await playAudioBuffer(arrayBuffer, thisTurnId);
 
   } catch (err) {
     console.error("Neural TTS request failed:", err);
