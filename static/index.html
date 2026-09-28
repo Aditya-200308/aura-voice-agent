@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aura Skincare | AI Voice Customer Support</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="/static/styles.css?v=18">
+</head>
+<body>
+  <div class="app-layout">
+    
+    <!-- FRONT & CENTER BRAND HEADER -->
+    <header class="hero-header">
+      <div class="brand-center">
+        <div class="brand-logo-badge">🌿</div>
+        <h1 class="brand-title">Aura Skincare</h1>
+        <p class="brand-sub">AI Voice Customer Support Agent • Premium Organic Skincare</p>
+        
+        <div class="header-tags">
+          <div class="status-tag tag-emerald">
+            <span class="pulse-dot"></span>
+            <span>Aria • Support Specialist</span>
+          </div>
+          <div class="status-tag tag-emerald">
+            <i data-lucide="cpu" class="tag-icon"></i>
+            <span>Gemini Flash</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN TWO-COLUMN CONTENT -->
+    <main class="main-grid">
+      
+      <!-- LEFT: Live Voice Interaction Console -->
+      <section class="card console-card voice-card">
+        <div class="card-title-bar">
+          <div class="title-with-icon">
+            <i data-lucide="mic" class="title-icon"></i>
+            <h2>Live Voice Interaction</h2>
+          </div>
+          
+          <div id="state-pill" class="state-pill idle">
+            <span class="state-indicator-dot"></span>
+            <span id="state-text">Ready to Connect</span>
+          </div>
+        </div>
+
+        <!-- Voice Orb Display Area -->
+        <div class="orb-stage">
+          <div class="orb-outer-wrapper">
+            <div id="voice-orb" class="voice-orb idle">
+              <div class="orb-center">
+                <i data-lucide="sparkles" id="orb-icon" class="orb-icon-svg"></i>
+              </div>
+              <div class="orb-glow-ring ring-1"></div>
+              <div class="orb-glow-ring ring-2"></div>
+              <div class="orb-glow-ring ring-3"></div>
+            </div>
+          </div>
+
+          <!-- Dynamic Audio Equalizer Bars -->
+          <div id="waveform" class="waveform-container">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          </div>
+
+          <p id="voice-hint" class="hint-text">
+            Click <strong>"Start Call"</strong> to speak naturally with Aria using your microphone
+          </p>
+        </div>
+
+        <!-- Call Control Buttons -->
+        <div class="call-btn-row">
+          <button id="btn-start" class="btn btn-call-start">
+            <i data-lucide="phone-call" class="btn-icon"></i>
+            <span>Start Call</span>
+          </button>
+          <button id="btn-pause" class="btn btn-call-pause" disabled>
+            <i data-lucide="pause" class="btn-icon" id="pause-btn-icon"></i>
+            <span id="pause-btn-text">Pause Mic</span>
+          </button>
+          <button id="btn-reset" class="btn btn-call-reset" disabled title="Reset conversation while preserving past history in JSON summary">
+            <i data-lucide="rotate-ccw" class="btn-icon"></i>
+            <span>Reset Call</span>
+          </button>
+          <button id="btn-end" class="btn btn-call-end" disabled>
+            <i data-lucide="phone-off" class="btn-icon"></i>
+            <span>End Call & Generate Summary</span>
+          </button>
+        </div>
+
+        <!-- Working Barge-in Notice & Instructions -->
+        <div class="barge-in-banner">
+          <i data-lucide="zap" class="banner-icon"></i>
+          <div>
+            <strong>Instant Interruption (Barge-in):</strong> You can interrupt Aria at any time by speaking into your mic or tapping any test prompt while she is talking.
+          </div>
+        </div>
+
+        <!-- Real-Time Conversation Stream -->
+        <div class="transcript-section">
+          <div class="transcript-bar">
+            <div class="transcript-title">
+              <i data-lucide="message-square" class="section-icon"></i>
+              <h3>Live Conversation Stream</h3>
+            </div>
+            <span id="turn-count" class="turn-count-badge">0 turns</span>
+          </div>
+
+          <div id="transcript-box" class="transcript-scroll-area">
+            <div id="empty-transcript" class="empty-state-box">
+              <i data-lucide="headphones" class="empty-icon"></i>
+              <p>Your spoken conversation will appear here in real-time.</p>
+              <p class="empty-subtext">Click "Start Call" or tap any order test prompt on the right to begin.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Tabbed Panel -->
+      <aside class="right-column">
+        <div class="card helper-card tabbed-panel">
+          <!-- Tab Navigation -->
+          <div class="tab-nav" role="tablist">
+            <button class="tab-btn active" data-tab="orders" role="tab" aria-selected="true">
+              <i data-lucide="package" class="tab-icon"></i>
+              <span>Test Orders</span>
+            </button>
+            <button class="tab-btn" data-tab="beyond" role="tab" aria-selected="false">
+              <i data-lucide="sparkles" class="tab-icon"></i>
+              <span>Beyond Basics</span>
+            </button>
+            <button class="tab-btn" data-tab="guardrails" role="tab" aria-selected="false">
+              <i data-lucide="shield-check" class="tab-icon"></i>
+              <span>Guardrails</span>
+            </button>
+          </div>
+
+          <!-- Tab: Test Orders -->
+          <div class="tab-content active" id="tab-orders" role="tabpanel">
+            <p class="tab-description">Sample orders from Mock Database for instant testing</p>
+            <div class="orders-stack">
+              <!-- Order 1: ORD-101 -->
+              <div class="order-box">
+                <div class="order-box-header">
+                  <span class="order-code code-blue">ORD-101</span>
+                  <span class="pill-status pill-cyan">Out for Delivery</span>
+                </div>
+                <div class="order-info-lines">
+                  <p class="order-line"><strong>Customer:</strong> Priya Sharma • <strong class="order-price">₹699</strong></p>
+                  <p class="order-line"><strong>Product:</strong> Vitamin C Serum (30ml)</p>
+                  <p class="order-subnote">BlueDart (BD-982103) • Expected by 6 PM today</p>
+                </div>
+                <div class="prompt-chips-row">
+                  <button class="action-chip" onclick="simulateVoiceQuery('Where is my order ORD-101?')">
+                    <i data-lucide="search" class="chip-icon"></i>
+                    <span>"Where is my order ORD-101?"</span>
+                  </button>
+                  <button class="action-chip chip-warn" onclick="simulateVoiceQuery('Can I cancel order ORD-101?')">
+                    <i data-lucide="ban" class="chip-icon"></i>
+                    <span>"Can I cancel ORD-101?" (Test Reject)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Order 2: ORD-102 -->
+              <div class="order-box">
+                <div class="order-box-header">
+                  <span class="order-code code-green">ORD-102</span>
+                  <span class="pill-status pill-green">Delivered</span>
+                </div>
+                <div class="order-info-lines">
+                  <p class="order-line"><strong>Customer:</strong> Rahul Verma • <strong class="order-price">₹499</strong></p>
+                  <p class="order-line"><strong>Product:</strong> Hydrating Sunscreen SPF 50</p>
+                  <p class="order-subnote">Delhivery (DL-441029) • Delivered 14 days ago</p>
+                </div>
+                <div class="prompt-chips-row">
+                  <button class="action-chip chip-warn" onclick="simulateVoiceQuery('I received ORD-102 two weeks ago and opened it, can I return it?')">
+                    <i data-lucide="rotate-ccw" class="chip-icon"></i>
+                    <span>"Return opened item" (Test 7d Policy)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Order 3: ORD-103 -->
+              <div class="order-box">
+                <div class="order-box-header">
+                  <span class="order-code code-amber">ORD-103</span>
+                  <span class="pill-status pill-amber">Processing</span>
+                </div>
+                <div class="order-info-lines">
+                  <p class="order-line"><strong>Customer:</strong> Ananya Patel • <strong class="order-price">₹850</strong></p>
+                  <p class="order-line"><strong>Product:</strong> Green Tea Face Wash + Toner</p>
+                  <p class="order-subnote">Placed 3 hrs ago • Eligible for cancellation</p>
+                </div>
+                <div class="prompt-chips-row">
+                  <button class="action-chip chip-success" onclick="simulateVoiceQuery('Please cancel my order ORD-103')">
+                    <i data-lucide="check-circle" class="chip-icon"></i>
+                    <span>"Please cancel order ORD-103" (Test Success)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Beyond Basics -->
+          <div class="tab-content" id="tab-beyond" role="tabpanel">
+            <p class="tab-description">Hinglish, Ambiguity, Multi-Tools & Multi-Brand</p>
+            <div class="beyond-stack">
+              <!-- 1. Hinglish -->
+              <div class="category-chips-group">
+                <span class="category-title"><i data-lucide="languages"></i> Hinglish Comprehension</span>
+                <div class="prompt-chips-row">
+                  <button class="action-chip" onclick="simulateVoiceQuery('Mera order ORD-101 kahan hai?')">
+                    <i data-lucide="message-square" class="chip-icon"></i>
+                    <span>"Mera order ORD-101 kahan hai?"</span>
+                  </button>
+                  <button class="action-chip chip-success" onclick="simulateVoiceQuery('Kya mera order ORD-103 cancel ho sakta hai?')">
+                    <i data-lucide="check-circle" class="chip-icon"></i>
+                    <span>"Kya ORD-103 cancel ho sakta hai?"</span>
+                  </button>
+                  <button class="action-chip" onclick="simulateVoiceQuery('Pincode 560001 pe delivery milegi kya?')">
+                    <i data-lucide="map-pin" class="chip-icon"></i>
+                    <span>"Pincode 560001 pe delivery milegi?"</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2. Ambiguous -->
+              <div class="category-chips-group">
+                <span class="category-title"><i data-lucide="help-circle"></i> Ambiguous Request Handling</span>
+                <div class="prompt-chips-row">
+                  <button class="action-chip" onclick="simulateVoiceQuery('Where is my order?')">
+                    <i data-lucide="search" class="chip-icon"></i>
+                    <span>"Where is my order?" (Missing ID)</span>
+                  </button>
+                  <button class="action-chip chip-warn" onclick="simulateVoiceQuery('Can you cancel my order please?')">
+                    <i data-lucide="ban" class="chip-icon"></i>
+                    <span>"Cancel my order" (Missing ID)</span>
+                  </button>
+                  <button class="action-chip chip-warn" onclick="simulateVoiceQuery('Please check order ORD-999')">
+                    <i data-lucide="alert-triangle" class="chip-icon"></i>
+                    <span>"Check ORD-999" (Unknown ID)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. Multi-Tool -->
+              <div class="category-chips-group">
+                <span class="category-title"><i data-lucide="wrench"></i> Multiple Integrated Tools</span>
+                <div class="prompt-chips-row">
+                  <button class="action-chip" onclick="simulateVoiceQuery('Check delivery timeline for pincode 560001')">
+                    <i data-lucide="map-pin" class="chip-icon"></i>
+                    <span>"Check pincode 560001" (Tool: Pincode)</span>
+                  </button>
+                  <button class="action-chip" onclick="simulateVoiceQuery('Recommend a serum for dry skin')">
+                    <i data-lucide="sparkles" class="chip-icon"></i>
+                    <span>"Recommend serum for dry skin" (Tool: Recs)</span>
+                  </button>
+                  <button class="action-chip" onclick="simulateVoiceQuery('What do you recommend for acne and blemishes?')">
+                    <i data-lucide="shield-check" class="chip-icon"></i>
+                    <span>"Products for acne" (Tool: Recs)</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 4. Multi-Brand -->
+              <div class="category-chips-group">
+                <span class="category-title"><i data-lucide="layers"></i> Multi-Brand Support</span>
+                <div class="prompt-chips-row">
+                  <button class="action-chip" onclick="simulateVoiceQuery('Tell me about Aura Derma')">
+                    <i data-lucide="tag" class="chip-icon"></i>
+                    <span>"Tell me about Aura Derma"</span>
+                  </button>
+                  <button class="action-chip" onclick="simulateVoiceQuery('What products does Aura Men have?')">
+                    <i data-lucide="user" class="chip-icon"></i>
+                    <span>"What does Aura Men have?"</span>
+                  </button>
+                  <button class="action-chip" onclick="simulateVoiceQuery('What brands are in the Aura portfolio?')">
+                    <i data-lucide="grid" class="chip-icon"></i>
+                    <span>"What brands do you operate?"</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Barge-in Indicator -->
+              <div class="barge-in-indicator">
+                <i data-lucide="zap"></i>
+                <span><strong>Barge-in / Interruption Active:</strong> Speak into your mic or tap any prompt while Aria is speaking to immediately interrupt her mid-sentence with sub-millisecond audio cutoff.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Guardrails -->
+          <div class="tab-content" id="tab-guardrails" role="tabpanel">
+            <p class="tab-description">Strict rules enforced by Aria</p>
+            <div class="policy-items-list">
+              <div class="policy-item">
+                <i data-lucide="truck" class="policy-icon"></i>
+                <div>
+                  <strong>Shipping:</strong> Free above ₹499 (₹50 fee below ₹499). ETA 3–5 business days.
+                </div>
+              </div>
+
+              <div class="policy-item">
+                <i data-lucide="rotate-ccw" class="policy-icon"></i>
+                <div>
+                  <strong>Returns:</strong> Within 7 days of delivery for <em>unopened, unused</em> items. Defective items within 48h with photos.
+                </div>
+              </div>
+
+              <div class="policy-item">
+                <i data-lucide="ban" class="policy-icon"></i>
+                <div>
+                  <strong>Cancellations:</strong> Only while status is <em>Processing</em>. Once Shipped/Out for Delivery, cannot be cancelled.
+                </div>
+              </div>
+
+              <div class="policy-item">
+                <i data-lucide="wallet" class="policy-icon"></i>
+                <div>
+                  <strong>Cash on Delivery:</strong> Up to ₹2,500 via cash or UPI at doorstep.
+                </div>
+              </div>
+
+              <div class="policy-item">
+                <i data-lucide="compass" class="policy-icon"></i>
+                <div>
+                  <strong>Out-of-Scope:</strong> Politely refuses non-brand requests (e.g., flight bookings).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+
+    <!-- POST-CALL STRUCTURED SUMMARY MODAL (Requirement 2D) -->
+    <div id="summary-modal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header-bar">
+          <div class="modal-title-wrap">
+            <div class="modal-icon-badge">
+              <i data-lucide="file-check"></i>
+            </div>
+            <div>
+              <h3>Post-Call Structured Summary</h3>
+              <p class="modal-sub">Automatically extracted call outcome & telemetry</p>
+            </div>
+          </div>
+          <button id="btn-close-modal" class="modal-close-btn" aria-label="Close modal">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="modal-scroll-body">
+          <!-- JSON Viewer -->
+          <div class="summary-block">
+            <div class="summary-block-header">
+              <span class="block-label">
+                <i data-lucide="code" class="label-icon"></i>
+                <span>Structured JSON Outcome</span>
+              </span>
+              <button id="btn-copy-json" class="btn-copy">
+                <i data-lucide="copy" class="btn-copy-icon"></i>
+                <span id="copy-btn-text">Copy JSON</span>
+              </button>
+            </div>
+            <pre id="json-viewer" class="json-code-box"><code>Loading summary...</code></pre>
+          </div>
+
+          <!-- Full Call Transcript -->
+          <div class="summary-block">
+            <span class="block-label">
+              <i data-lucide="align-left" class="label-icon"></i>
+              <span>Chronological Transcript</span>
+            </span>
+            <div id="modal-transcript-list" class="modal-transcript-area">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions-bar">
+          <button id="btn-modal-dismiss" class="btn btn-secondary-gray">Close</button>
+          <button onclick="window.location.reload()" class="btn btn-call-start">Start New Call</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/app.js?v=24"></script>
+  <script>
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
