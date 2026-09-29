@@ -9,6 +9,7 @@ import os
 import json
 import logging
 import re
+import asyncio
 from typing import List, Dict, Any, Optional
 
 from app.tools import (
@@ -20,7 +21,7 @@ from app.tools import (
     recommend_skincare_product,
     get_brand_information
 )
-from app.database import get_order_by_id
+from app.database import get_order_by_id, reset_mock_orders
 
 logger = logging.getLogger("aura-agent")
 
@@ -73,6 +74,11 @@ class ConversationSession:
         self.cancellation_denied_orders: set = set()
         self.reset_count: int = 0
         self.pre_reset_turns_count: int = 0
+        # Automatically ensure mock database is in pristine state for each fresh session
+        try:
+            reset_mock_orders()
+        except Exception:
+            pass
 
     def add_message(self, role: str, content: str):
         self.messages.append({"role": role, "content": content})
@@ -88,6 +94,10 @@ class ConversationSession:
         self.current_order_id = None
         self.intent_detected = None
         self.cancellation_denied_orders.clear()
+        try:
+            reset_mock_orders()
+        except Exception:
+            pass
 
     def get_transcript(self) -> List[Dict[str, str]]:
         return self.messages
@@ -191,9 +201,9 @@ async def process_user_turn(session_id: str, user_transcript: str) -> Dict[str, 
     # Try Gemini API if key is configured
     if api_key and api_key != "your_gemini_api_key_here":
         try:
-            return await asyncio.wait_for(_call_gemini_with_tools(session, user_transcript, api_key), timeout=2.5)
+            return await asyncio.wait_for(_call_gemini_with_tools(session, user_transcript, api_key), timeout=4.0)
         except Exception as e:
-            logger.error(f"Gemini API call failed or timed out, using resilient fallback engine: {e}")
+            logger.warning(f"Gemini API call failed or timed out, using resilient fallback engine: {e}")
             return _resilient_policy_engine(session, user_transcript)
     else:
         # Resilient local policy engine (ensures 100% functionality and low latency)
@@ -206,7 +216,7 @@ async def _call_gemini_with_tools(session: ConversationSession, user_text: str, 
         from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=api_key, http_options={"timeout": 2.5})
+        client = genai.Client(api_key=api_key, http_options={"timeout": 4000})
         
         # Build contents from history
         contents = []
@@ -415,7 +425,9 @@ def _resilient_policy_engine(session: ConversationSession, user_text: str) -> Di
     """
     text = normalize_spoken_order_numbers(user_text).lower().strip()
     mentioned_orders = extract_all_order_ids_from_text(user_text)
-    order_id = mentioned_orders[0] if mentioned_orders else session.current_order_id
+    if mentioned_orders:
+        session.current_order_id = mentioned_orders[0]
+    order_id = session.current_order_id
     tool_used = None
     
     # 1. Out of Scope Check
@@ -558,6 +570,44 @@ def _resilient_policy_engine(session: ConversationSession, user_text: str) -> Di
         resp = "We offer free delivery on all orders above 499 rupees. For orders below 499 rupees, a standard shipping fee of 50 rupees applies. Delivery usually takes 3 to 5 business days."
         session.add_message("agent", resp)
         return {"response_text": resp, "tool_used": None, "order_id": order_id}
+
+    # 8.5 Contextual Order Contents / Items / Product Inquiry (e.g. "what was the order about", "what did I order", "what was in it")
+    is_product_content_query = any(phrase in text for phrase in [
+        "what was the order about", "what is the order about", "what was in the order",
+        "what is in the order", "what did i order", "what did she order", "what did he order",
+        "what product", "which product", "what was ordered", "items in the order",
+        "order contents", "kya order kiya tha", "kya mangwaya tha", "product kya tha", "kya item tha",
+        "what was it about", "what is it about", "what items"
+    ]) or (
+        not mentioned_orders and
+        ("about" in text or "product" in text or "item" in text or "contain" in text or "bought" in text) and
+        ("order" in text or "it" in text or "package" in text or "parcel" in text) and
+        not any(w in text for w in ["status", "where", "track", "reach", "arrive", "cancel"])
+    )
+
+    if is_product_content_query and session.current_order_id:
+        target_oid = session.current_order_id
+        tool_used = "get_order_details"
+        res = get_order_details(target_oid)
+        if res.get("found"):
+            cust = res["customer"]
+            prod = re.sub(r'[\(\)]', '', res["product"]).strip()
+            val = res["value"]
+            curr_status = res["status"]
+            if curr_status == "Cancelled":
+                resp = f"Order {target_oid} for {cust} was for {prod}, with an order value of {val}. The order has been cancelled."
+            elif curr_status == "Processing":
+                resp = f"Order {target_oid} for {cust} contains {prod}, with a total order value of {val}."
+            elif curr_status == "Out for Delivery":
+                resp = f"Order {target_oid} for {cust} contains {prod}, with an order value of {val}."
+            elif curr_status == "Delivered":
+                resp = f"Order {target_oid} for {cust} contains {prod}, valued at {val}."
+            else:
+                resp = f"Order {target_oid} for {cust} contains {prod}, with a value of {val}."
+        else:
+            resp = f"I couldn't locate details for order {target_oid}. Could you please confirm your order number?"
+        session.add_message("agent", resp)
+        return {"response_text": resp, "tool_used": tool_used, "order_id": target_oid}
 
     # 9. Multi-Order or Single Order Tracking / Inquiries / Follow-ups (including Hinglish)
     # Hinglish: "mera order kahan hai", "kab aayega", "status batao", "pata karo"

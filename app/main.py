@@ -31,7 +31,7 @@ from typing import Optional
 load_dotenv()
 
 import asyncio
-from app.database import get_all_orders_summary
+from app.database import get_all_orders_summary, reset_mock_orders
 from app.agent import process_user_turn, generate_post_call_summary, get_or_create_session
 from app.tts import synthesize_speech_bytes, prewarm_tts_cache
 
@@ -128,11 +128,19 @@ async def tts_endpoint(req: TTSRequest):
         raise HTTPException(status_code=500, detail=f"TTS synthesis error: {str(e)}")
 
 
+@app.post("/api/reset-orders")
+async def reset_orders_endpoint():
+    """Explicitly resets all mock orders back to initial state (e.g. ORD-103 back to Processing)."""
+    reset_mock_orders()
+    return {"status": "orders_reset", "orders": get_all_orders_summary()}
+
+
 @app.post("/api/reset-call")
 async def reset_call_endpoint(req: ResetCallRequest):
-    """Resets the live conversation context while preserving pre-reset logs for post-call JSON summary."""
+    """Resets the live conversation context and resets mock order states."""
     session = get_or_create_session(req.session_id)
     session.record_reset()
+    reset_mock_orders()
     return {
         "status": "reset_successful",
         "session_id": req.session_id,

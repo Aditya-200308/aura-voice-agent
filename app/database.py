@@ -6,7 +6,9 @@ Contains specified sample orders and operations with policy enforcement.
 from typing import Dict, Any, Optional
 import re
 
-MOCK_ORDERS: Dict[str, Dict[str, Any]] = {
+import copy
+
+INITIAL_MOCK_ORDERS: Dict[str, Dict[str, Any]] = {
     "ORD-101": {
         "order_id": "ORD-101",
         "customer": "Priya Sharma",
@@ -49,6 +51,15 @@ MOCK_ORDERS: Dict[str, Dict[str, Any]] = {
         "cancellation_reason": None
     }
 }
+
+MOCK_ORDERS: Dict[str, Dict[str, Any]] = copy.deepcopy(INITIAL_MOCK_ORDERS)
+
+
+def reset_mock_orders() -> Dict[str, Dict[str, Any]]:
+    """Resets mock orders to initial pristine state, ensuring ORD-103 is Processing."""
+    global MOCK_ORDERS
+    MOCK_ORDERS = copy.deepcopy(INITIAL_MOCK_ORDERS)
+    return MOCK_ORDERS
 
 # Multi-Brand Directory (House of Aura Brands)
 AURA_BRANDS = {

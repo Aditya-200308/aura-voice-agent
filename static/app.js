@@ -753,6 +753,9 @@ async function startCall() {
   turnCountEl.textContent = "0 turns";
   transcriptBox.innerHTML = "";
 
+  // Reset mock order states on backend so each call begins with ORD-103 in Processing
+  fetch("/api/reset-orders", { method: "POST" }).catch(e => console.warn("Reset orders error:", e));
+
   btnStart.disabled = true;
   btnEnd.disabled = false;
   btnPause.disabled = false;
