@@ -590,7 +590,10 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
       currentAudio = source;
 
       return new Promise((resolve) => {
-        source.onended = () => {
+        let endedCalled = false;
+        const finish = () => {
+          if (endedCalled) return;
+          endedCalled = true;
           if (currentAgentSourceNode === source) {
             currentAgentSourceNode = null;
           }
@@ -601,6 +604,11 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
           onAgentFinishedSpeaking(thisTurnId);
           resolve();
         };
+
+        source.onended = finish;
+        // Guaranteed fallback timer if browser drops onended event
+        const fallbackMs = Math.ceil(audioBuffer.duration * 1000) + 200;
+        setTimeout(finish, fallbackMs);
         source.start(0);
       });
     } catch (decodeErr) {
@@ -616,7 +624,10 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
     audio.volume = 0.95;
     currentAudio = audio;
 
+    let endedCalled = false;
     const cleanup = () => {
+      if (endedCalled) return;
+      endedCalled = true;
       URL.revokeObjectURL(audioUrl);
       if (currentAudio === audio) currentAudio = null;
       lastAgentSpokenTime = Date.now();
@@ -646,11 +657,11 @@ function onAgentFinishedSpeaking(thisTurnId) {
       setState(STATES.PAUSED);
     } else {
       setTimeout(() => {
-        if (isCallActive && !isCallPaused && currentState !== STATES.SPEAKING && currentState !== STATES.THINKING) {
+        if (isCallActive && !isCallPaused) {
           setState(STATES.LISTENING);
           startListening();
         }
-      }, 250);
+      }, 150);
     }
   }
 }
