@@ -9,8 +9,8 @@ An end-to-end, browser-based AI Voice Customer Support Agent built for **Aura Sk
 
 Evaluators can click **"Start Call"**, speak naturally with **Aria** (an Indian customer support specialist), check real-time order tracking, test cancellation policies, and review structured post-call telemetry.
 
-> 🌐 **Live Public Application URL**:  
-> **[https://dept-focuses-lean-what.trycloudflare.com](https://dept-focuses-lean-what.trycloudflare.com)**  
+> 🌐 **Live Public Application URL (24/7 Cloud)**:  
+> **[https://aura-voice-agent-99r6.onrender.com](https://aura-voice-agent-99r6.onrender.com)**  
 > *(Open in Google Chrome or Microsoft Edge, allow microphone access, and speak directly with Aria).*
 
 ---
