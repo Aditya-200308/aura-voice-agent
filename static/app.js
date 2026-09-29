@@ -241,6 +241,8 @@ function isSelfEcho(userTranscript) {
 }
 
 // SETUP SPEECH RECOGNITION WITH CONTINUOUS LISTENING FOR BARGE-IN
+let latestHeardSpeech = "";
+
 function setupSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -282,6 +284,9 @@ function setupSpeechRecognition() {
 
     // 1. Live feedback while customer speaks
     const liveText = (final || interim).trim();
+    if (liveText) {
+      latestHeardSpeech = liveText;
+    }
     if (liveText && currentState === STATES.LISTENING) {
       const displayLive = normalizeSpokenNumbers(liveText);
       voiceHint.innerHTML = `<span class="live-hearing-badge"><i data-lucide="mic" style="width:14px;height:14px;display:inline;"></i> Hearing: "${displayLive}..."</span>`;
@@ -291,6 +296,7 @@ function setupSpeechRecognition() {
     // 2. Dispatch complete utterance when finalized
     if (final && final.trim().length >= 1) {
       const fullTranscript = normalizeSpokenNumbers(final.trim());
+      latestHeardSpeech = "";
       console.log("Customer speech finalized:", fullTranscript);
       dispatchUtterance(fullTranscript);
     }
@@ -304,14 +310,23 @@ function setupSpeechRecognition() {
       alert("Microphone permission was not allowed. Please click the camera/mic icon in your browser address bar to allow microphone access, then click 'Start Call'.");
       return;
     }
-    // For 'no-speech', restart quietly so mic stays open for customer
+    // For transient errors like 'no-speech', restart quietly so mic stays open for customer
     if (isCallActive && !isCallPaused && currentState === STATES.LISTENING) {
-      scheduleRestart(200);
+      scheduleRestart(250);
     }
   };
 
   sr.onend = () => {
     isRecognitionRunning = false;
+    // Dispatch any speech that was captured as interim if Chrome closed before setting isFinal
+    if (latestHeardSpeech && latestHeardSpeech.trim().length >= 1 && currentState === STATES.LISTENING) {
+      const fullTranscript = normalizeSpokenNumbers(latestHeardSpeech.trim());
+      latestHeardSpeech = "";
+      console.log("Customer speech dispatched on recognition end:", fullTranscript);
+      dispatchUtterance(fullTranscript);
+      return;
+    }
+    latestHeardSpeech = "";
     // If Aria is not speaking/thinking and call is active, restart listening for customer
     if (isCallActive && !isCallPaused && currentState === STATES.LISTENING && !currentAudio) {
       scheduleRestart(150);
@@ -355,7 +370,7 @@ function scheduleRestart(delay = 150) {
 function startListening() {
   if (!isCallActive || isCallPaused || !recognition) return;
   if (isRecognitionRunning) return;
-  if (currentState === STATES.SPEAKING || currentState === STATES.THINKING || currentAudio !== null || currentAgentSourceNode !== null) {
+  if (currentState === STATES.SPEAKING || currentState === STATES.THINKING) {
     return;
   }
   try {
@@ -364,6 +379,9 @@ function startListening() {
     setState(STATES.LISTENING);
   } catch (e) {
     console.log("startListening notice:", e.message);
+    if (isCallActive && !isCallPaused && currentState !== STATES.SPEAKING && currentState !== STATES.THINKING) {
+      scheduleRestart(300);
+    }
   }
 }
 
@@ -620,25 +638,19 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
 }
 
 function onAgentFinishedSpeaking(thisTurnId) {
-  // Clear any pending recognition buffer so Aria's final syllable doesn't bleed into customer turn
-  try {
-    if (recognition && isRecognitionRunning) {
-      recognition.abort();
-      isRecognitionRunning = false;
-    }
-  } catch (e) {}
+  currentAudio = null;
+  currentAgentSourceNode = null;
 
   if (isCallActive && thisTurnId === currentTurnId) {
     if (isCallPaused) {
       setState(STATES.PAUSED);
     } else {
-      // Settle room reverberation (300ms), then open clean listening session for customer
       setTimeout(() => {
-        if (isCallActive && !isCallPaused && !currentAudio && !currentAgentSourceNode) {
+        if (isCallActive && !isCallPaused && currentState !== STATES.SPEAKING && currentState !== STATES.THINKING) {
           setState(STATES.LISTENING);
           startListening();
         }
-      }, 300);
+      }, 250);
     }
   }
 }
