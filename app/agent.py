@@ -39,10 +39,10 @@ You are speaking to the customer directly on a real-time phone or voice call.
   1. Aura Skincare: Our flagship organic botanical line (Vitamin C Serum, Hydrating Sunscreen, Rosehip Night Cream).
   2. Aura Derma: Science-backed clinical actives for persistent concerns (Niacinamide 10%, Salicylic Acid 2%).
   3. Aura Men: Premium grooming and pollution defense (Charcoal Face Wash, Cedarwood Beard Oil).
-- Shipping: Free delivery on orders above ₹499. Orders below ₹499 have a ₹50 shipping fee. Delivery takes 3–5 business days.
+- Shipping: Free delivery on orders above 499 rupees. Orders below 499 rupees have a 50 rupees shipping fee. Delivery takes 3 to 5 business days.
 - Returns & Refunds: Returns accepted within 7 days of delivery ONLY for unopened, unused products in original packaging. Damaged or defective items must be reported within 48 hours with photos for a replacement. NEVER promise a refund or return if a product is opened or beyond 7 days!
 - Cancellations: Orders can ONLY be cancelled while their status is 'Processing'. Once an order is 'Shipped' or 'Out for Delivery', it CANNOT be cancelled (advise the customer they can decline delivery at their doorstep).
-- Cash on Delivery (COD): Available strictly for orders up to ₹2,500 across India. If the customer asks to pay COD for an amount above ₹2,500 (e.g. ₹3,000), clearly say NO: Cash on Delivery is not permitted above ₹2,500 and they must pay online via UPI or card. If the amount is ₹2,500 or below, say YES. Customers can pay by cash or UPI at the doorstep.
+- Cash on Delivery (COD): Available strictly for orders up to 2,500 rupees across India. If the customer asks to pay COD for an amount above 2,500 rupees (e.g. 3,000 rupees), clearly say NO: Cash on Delivery is not permitted above 2,500 rupees and they must pay online via UPI or card. If the amount is 2,500 rupees or below, say YES. Customers can pay by cash or UPI at the doorstep.
 
 ### TOOLS & ACTION DISPATCH:
 Call the appropriate tool for customer inquiries:
@@ -191,7 +191,7 @@ async def process_user_turn(session_id: str, user_transcript: str) -> Dict[str, 
     # Try Gemini API if key is configured
     if api_key and api_key != "your_gemini_api_key_here":
         try:
-            return await asyncio.wait_for(_call_gemini_with_tools(session, user_transcript, api_key), timeout=3.5)
+            return await asyncio.wait_for(_call_gemini_with_tools(session, user_transcript, api_key), timeout=2.5)
         except Exception as e:
             logger.error(f"Gemini API call failed or timed out, using resilient fallback engine: {e}")
             return _resilient_policy_engine(session, user_transcript)
@@ -206,7 +206,7 @@ async def _call_gemini_with_tools(session: ConversationSession, user_text: str, 
         from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=api_key, http_options={"timeout": 3.0})
+        client = genai.Client(api_key=api_key, http_options={"timeout": 2.5})
         
         # Build contents from history
         contents = []
@@ -280,7 +280,7 @@ async def _call_gemini_with_tools(session: ConversationSession, user_text: str, 
             )
         ]
 
-        response = client.models.generate_content(
+        response = await client.aio.models.generate_content(
             model=model_name,
             contents=contents,
             config=types.GenerateContentConfig(
@@ -348,7 +348,7 @@ async def _call_gemini_with_tools(session: ConversationSession, user_text: str, 
                     tools_used.append("get_order_details")
             
             # Send all tool responses back to model to synthesize the final spoken answer
-            follow_up = client.models.generate_content(
+            follow_up = await client.aio.models.generate_content(
                 model=model_name,
                 contents=[*contents, response.candidates[0].content, types.Content(role="user", parts=tool_contents)],
                 config=types.GenerateContentConfig(
@@ -555,7 +555,7 @@ def _resilient_policy_engine(session: ConversationSession, user_text: str) -> Di
         "shipping fee", "how long does delivery take", "kitne din me aayega", "charge kitna"
     ])
     if is_shipping_query:
-        resp = "We offer free delivery on all orders above ₹499. For orders below ₹499, a standard shipping fee of ₹50 applies. Delivery usually takes 3 to 5 business days."
+        resp = "We offer free delivery on all orders above 499 rupees. For orders below 499 rupees, a standard shipping fee of 50 rupees applies. Delivery usually takes 3 to 5 business days."
         session.add_message("agent", resp)
         return {"response_text": resp, "tool_used": None, "order_id": order_id}
 
