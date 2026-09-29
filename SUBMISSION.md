@@ -36,7 +36,7 @@
 ---
 
 ### 4. 📝 Short Approach Note (2–3 Sentences)
-> *"I designed Aura Skincare's AI Voice Agent ('Aria') using a unified Python FastAPI backend and a zero-build client-side interface, combining high-fidelity Microsoft neural Indian English voice synthesis with structured Gemini function calling. The architecture pairs dynamic tool execution (order tracking, cancellations, pincode serviceability, product recommendations) with a deterministic guardrail engine that strictly enforces D2C policies (such as a ₹2,500 COD limit and 7-day unopened returns). To ensure a smooth customer experience, the system coordinates turn-based microphone isolation to eliminate speaker echo, followed by automated post-call structured JSON telemetry."*
+> *"Developed in Google's Antigravity IDE, I architected Aura Skincare's AI Voice Agent ('Aria') using a unified Python FastAPI backend and a zero-build client-side interface, combining Microsoft neural Indian English voice synthesis with structured Gemini function calling. The architecture pairs dynamic tool execution (order tracking, cancellations, pincode serviceability, product recommendations) with a deterministic guardrail engine that strictly enforces D2C policies (such as a ₹2,500 COD limit and 7-day unopened returns). To ensure a smooth customer experience, the system coordinates turn-based microphone isolation with Web Audio API playback to eliminate speaker echo, followed by automated post-call structured JSON telemetry."*
 
 ---
 

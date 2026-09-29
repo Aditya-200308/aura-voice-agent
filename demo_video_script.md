@@ -135,7 +135,7 @@
 **On Screen**: Return to the browser showing the clean Aura Skincare UI.
 
 **What to Say to the Viewer**:
-> *"The entire codebase is fully documented on GitHub, complete with setup instructions, `.env.example`, Section 9 responses, and a public live deployment.*
+> *"The entire codebase is fully documented on GitHub, complete with setup instructions, `.env.example`, Section 9 responses, and a public live deployment. In line with the assessment guidelines, I leveraged Google's Antigravity IDE to rapidly scaffold and stress-test the pipeline while maintaining full first-principles control over every layer.
 > 
 > *Thank you to the team at Datastraw Technologies for reviewing my submission. I look forward to discussing this further!"*
 

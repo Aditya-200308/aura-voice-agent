@@ -169,9 +169,17 @@ The most challenging aspect was **achieving low-latency conversational turn-taki
    - Integrate telemetry tools (OpenTelemetry / Langfuse) to track First Token Latency (TTFT), tool call accuracy, and policy compliance rates.
    - Implement an automated sentiment analysis trigger that escalates the call to a human agent if customer frustration or unresolved intent exceeds a threshold.
 
+### 5. AI Tooling & Engineering Workflow (Per Assessment Section 6)
+In alignment with Datastraw's encouragement of modern AI-assisted engineering practices, this project was developed using **Google's Antigravity IDE** paired with **Google Gemini**:
+- **System Architecture & Rapid Scaffolding**: Antigravity IDE was utilized as an agentic pair-programmer to rapidly scaffold the asynchronous FastAPI backend, design the glassmorphism frontend, and wire up zero-build Web Audio pipelines.
+- **Acoustic Profiling & Bug Isolation**: Leveraged IDE subagent diagnostics to resolve browser autoplay restrictions across multi-turn calls, isolate acoustic bleed, and eliminate Windows console encoding crashes on Unicode rupee symbols (`₹`).
+- **Synthetic Red-Teaming**: Programmatically generated multi-turn stress test dialogues (testing order ID extraction, ₹2,500 COD ceilings, out-of-scope flight queries, and in-call resets) to rigorously benchmark the dual-layer guardrail engine before final deployment.
+- **First-Principles Ownership**: While modern AI tools accelerated the iteration velocity, every architectural decision—from turn-based microphone isolation and Web Audio API buffer management to deterministic fallback engines and structured CRM JSON extraction—was architected with deep first-principles understanding and verified end-to-end.
+
 ---
 
 ## 📦 Submission Details
 - **Role**: AI + Tech Intern / Full Stack AI Developer Intern
 - **Company**: Datastraw Technologies
 - **Candidate**: Aditya Suvarna
+- **AI Tooling Used**: Antigravity IDE & Google Gemini (per Section 6 guidelines)
