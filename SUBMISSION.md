@@ -5,7 +5,7 @@
 
 ### 1. 🌐 Public Application URL
 - **Live HTTPS URL (Active with Mic Access)**:
-  `https://ports-foot-williams-continually.trycloudflare.com`
+  `https://aurora-borough-mental-nominated.trycloudflare.com`
 - **Fallback / Cloud Deployment**:
   Configured for 1-click deploy on Render via included `render.yaml` and `Dockerfile`.
 
