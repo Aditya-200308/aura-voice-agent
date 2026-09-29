@@ -23,3 +23,7 @@ Thumbs.db
 *.wav
 *.ps1
 cloudflared.exe
+
+# Internal candidate notes & scripts
+demo_video_script.md
+SUBMISSION.md

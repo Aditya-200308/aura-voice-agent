@@ -140,10 +140,11 @@ Open **`http://localhost:8000`** in Google Chrome or Microsoft Edge. Allow micro
 ## 💡 Section 9: Tell Us How You Think
 
 ### 1. Why did you choose your particular architecture and technology stack?
-I chose a **100% Python backend (FastAPI) paired with a zero-build client-side interface** for three key reasons:
+I chose a **100% Python backend (FastAPI) paired with a zero-build client-side interface**, developed using **Google's Antigravity IDE** paired with **Google Gemini** (in direct alignment with Section 6's encouragement of modern AI tooling):
 - **Maximum Reliability & Zero-Friction Evaluation**: Heavy JavaScript frontends (Next.js, React) introduce build step complexity, hydration overhead, and node version incompatibilities. A clean FastAPI architecture serves the complete application as a self-contained unit, starting up in milliseconds and deploying effortlessly on Render or Railway.
-- **Natural Indian Voice Quality**: Many voice demos use generic American or robotic browser voices. By leveraging Python's `edge-tts` with high-fidelity expressive neural models, Aria sounds like a genuine Indian customer support specialist with warm, human cadence at zero API cost.
+- **Natural Indian Voice Quality**: Many voice demos use generic American or robotic browser voices. By leveraging Python's `edge-tts` with high-fidelity expressive neural models (`en-IN-NeerjaExpressiveNeural`), Aria sounds like a genuine Indian customer support specialist with warm, human cadence at zero API cost.
 - **Dual-Engine Resiliency**: The reasoning layer uses Gemini function calling for flexible natural language comprehension, backed by a deterministic guardrail engine. If an API key expires or network lag spikes, the agent seamlessly degrades rather than crashing or freezing.
+- **Modern AI-Assisted Engineering Workflow**: Developed in **Google's Antigravity IDE**, leveraging agentic pair-programming to rapidly scaffold the async backend, profile acoustic turn-taking, and run synthetic red-teaming dialogues (validating ₹2,500 COD ceilings, out-of-scope flight queries, and post-call CRM telemetry) while maintaining strict first-principles engineering ownership over every component.
 
 ### 2. What was the most difficult part of the assignment, and how did you solve it?
 The most challenging aspect was **achieving low-latency conversational turn-taking and natural speech formatting**:
@@ -169,17 +170,9 @@ The most challenging aspect was **achieving low-latency conversational turn-taki
    - Integrate telemetry tools (OpenTelemetry / Langfuse) to track First Token Latency (TTFT), tool call accuracy, and policy compliance rates.
    - Implement an automated sentiment analysis trigger that escalates the call to a human agent if customer frustration or unresolved intent exceeds a threshold.
 
-### 5. AI Tooling & Engineering Workflow (Per Assessment Section 6)
-In alignment with Datastraw's encouragement of modern AI-assisted engineering practices, this project was developed using **Google's Antigravity IDE** paired with **Google Gemini**:
-- **System Architecture & Rapid Scaffolding**: Antigravity IDE was utilized as an agentic pair-programmer to rapidly scaffold the asynchronous FastAPI backend, design the glassmorphism frontend, and wire up zero-build Web Audio pipelines.
-- **Acoustic Profiling & Bug Isolation**: Leveraged IDE subagent diagnostics to resolve browser autoplay restrictions across multi-turn calls, isolate acoustic bleed, and eliminate Windows console encoding crashes on Unicode rupee symbols (`₹`).
-- **Synthetic Red-Teaming**: Programmatically generated multi-turn stress test dialogues (testing order ID extraction, ₹2,500 COD ceilings, out-of-scope flight queries, and in-call resets) to rigorously benchmark the dual-layer guardrail engine before final deployment.
-- **First-Principles Ownership**: While modern AI tools accelerated the iteration velocity, every architectural decision—from turn-based microphone isolation and Web Audio API buffer management to deterministic fallback engines and structured CRM JSON extraction—was architected with deep first-principles understanding and verified end-to-end.
-
 ---
 
 ## 📦 Submission Details
 - **Role**: AI + Tech Intern / Full Stack AI Developer Intern
 - **Company**: Datastraw Technologies
 - **Candidate**: Aditya Suvarna
-- **AI Tooling Used**: Antigravity IDE & Google Gemini (per Section 6 guidelines)
