@@ -109,7 +109,7 @@ cp .env.example .env
 Edit `.env`:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 PORT=8000
 ```
 *(Note: If you leave `GEMINI_API_KEY` blank, the app will run with its built-in rule-based guardrail fallback engine, guaranteeing 100% testability offline!)*

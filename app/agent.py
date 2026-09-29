@@ -215,7 +215,7 @@ async def _call_gemini_with_tools(session: ConversationSession, user_text: str, 
             contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
         contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_text)]))
 
-        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
         # Map all 5 tool declarations
         gemini_tools = [
@@ -677,7 +677,7 @@ async def generate_post_call_summary(session_id: str) -> Dict[str, Any]:
             from google.genai import types
             
             client = genai.Client(api_key=api_key)
-            model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+            model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
             
             transcript_text = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in transcript])
             prompt = f"""Analyze the following customer support call transcript for Aura Skincare and return a strictly valid JSON object with these keys:
