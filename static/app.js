@@ -216,6 +216,7 @@ function normalizeSpokenNumbers(text) {
 
 // ROLLING HISTORY OF RECENT AGENT UTTERANCES
 let agentUtteranceHistory = [];
+let isProcessingUtterance = false;
 
 function recordAgentUtterance(text) {
   if (!text) return;
@@ -322,6 +323,11 @@ function setupSpeechRecognition() {
 }
 
 function dispatchUtterance(transcript) {
+  if (!isCallActive || isCallPaused) return;
+  if (isProcessingUtterance || currentState === STATES.THINKING || currentState === STATES.SPEAKING || currentAudio !== null || currentAgentSourceNode !== null) {
+    console.log("Speech suppressed while Aria is busy:", transcript);
+    return;
+  }
   if (isSelfEcho(transcript)) {
     console.log("Self-echo blocked in dispatchUtterance:", transcript);
     return;
@@ -498,13 +504,18 @@ function togglePauseCall() {
   }
 }
 
-// PROCESS USER UTTERANCE
+// PROCESS USER UTTERANCE (ATOMIC, GUARANTEED TURN-TAKING)
 async function handleUserUtterance(userText) {
-  // 1. Immediately cut off any playing audio and close microphone while thinking
+  if (isProcessingUtterance) {
+    console.log("Already processing an utterance, ignoring overlapping input:", userText);
+    return;
+  }
+  isProcessingUtterance = true;
+
+  // 1. Immediately close microphone while thinking & speaking to prevent echo
   stopListening();
   stopAgentSpeaking();
 
-  const thisTurnId = ++currentTurnId;
   setState(STATES.THINKING);
   appendTranscriptMessage("customer", userText);
 
@@ -518,12 +529,6 @@ async function handleUserUtterance(userText) {
       })
     });
 
-    // Check if interrupted while request was in-flight
-    if (thisTurnId !== currentTurnId) {
-      console.log("Turn discarded due to user interruption.");
-      return;
-    }
-
     if (!res.ok) {
       const errBody = await res.text();
       throw new Error(`Chat API responded with status ${res.status}: ${errBody}`);
@@ -536,20 +541,21 @@ async function handleUserUtterance(userText) {
     }
 
     appendTranscriptMessage("agent", agentReply);
-    await speakText(agentReply, thisTurnId);
+    await speakText(agentReply);
 
   } catch (err) {
-    if (thisTurnId !== currentTurnId) return;
     console.error("Chat API error:", err);
     const fallbackText = "I apologize, but I had a brief connection issue. Could you please repeat that?";
     appendTranscriptMessage("agent", fallbackText);
-    await speakText(fallbackText, thisTurnId);
+    await speakText(fallbackText);
+  } finally {
+    isProcessingUtterance = false;
   }
 }
 
 // PLAY AUDIO BUFFER VIA WEB AUDIO API (IMMUNE TO AUTOPLAY RESTRICTIONS ON MULTI-TURN CALLS)
-async function playAudioBuffer(arrayBuffer, thisTurnId) {
-  if (thisTurnId !== currentTurnId || !isCallActive) return;
+async function playAudioBuffer(arrayBuffer) {
+  if (!isCallActive) return;
 
   // 1. Preferred: Web Audio API (unlocked on Start Call, never blocked on subsequent turns)
   if (audioCtx) {
@@ -558,7 +564,7 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
     }
     try {
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-      if (thisTurnId !== currentTurnId || !isCallActive) return;
+      if (!isCallActive) return;
 
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
@@ -580,7 +586,7 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
             currentAudio = null;
           }
           lastAgentSpokenTime = Date.now();
-          onAgentFinishedSpeaking(thisTurnId);
+          onAgentFinishedSpeaking();
           resolve();
         };
         source.start(0);
@@ -602,7 +608,7 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
       URL.revokeObjectURL(audioUrl);
       if (currentAudio === audio) currentAudio = null;
       lastAgentSpokenTime = Date.now();
-      onAgentFinishedSpeaking(thisTurnId);
+      onAgentFinishedSpeaking();
       resolve();
     };
 
@@ -619,7 +625,8 @@ async function playAudioBuffer(arrayBuffer, thisTurnId) {
   });
 }
 
-function onAgentFinishedSpeaking(thisTurnId) {
+function onAgentFinishedSpeaking() {
+  isProcessingUtterance = false;
   // Clear any pending recognition buffer so Aria's final syllable doesn't bleed into customer turn
   try {
     if (recognition && isRecognitionRunning) {
@@ -628,13 +635,13 @@ function onAgentFinishedSpeaking(thisTurnId) {
     }
   } catch (e) {}
 
-  if (isCallActive && thisTurnId === currentTurnId) {
+  if (isCallActive) {
     if (isCallPaused) {
       setState(STATES.PAUSED);
     } else {
       // Settle room reverberation (300ms), then open clean listening session for customer
       setTimeout(() => {
-        if (isCallActive && !isCallPaused && !currentAudio && !currentAgentSourceNode) {
+        if (isCallActive && !isCallPaused && !currentAudio && !currentAgentSourceNode && !isProcessingUtterance) {
           setState(STATES.LISTENING);
           startListening();
         }
@@ -644,8 +651,8 @@ function onAgentFinishedSpeaking(thisTurnId) {
 }
 
 // SPEAK AGENT RESPONSE (Always uses Microsoft Neural Voice from /api/tts)
-async function speakText(text, thisTurnId) {
-  if (thisTurnId !== currentTurnId || !isCallActive) {
+async function speakText(text) {
+  if (!isCallActive) {
     return;
   }
 
@@ -669,16 +676,16 @@ async function speakText(text, thisTurnId) {
       throw new Error(`TTS server returned status ${ttsRes.status}`);
     }
 
-    if (thisTurnId !== currentTurnId || !isCallActive) {
-      return; // Interrupted while audio was downloading
+    if (!isCallActive) {
+      return;
     }
 
     const arrayBuffer = await ttsRes.arrayBuffer();
-    await playAudioBuffer(arrayBuffer, thisTurnId);
+    await playAudioBuffer(arrayBuffer);
 
   } catch (err) {
     console.error("Neural TTS request failed:", err);
-    if (isCallActive && thisTurnId === currentTurnId) {
+    if (isCallActive) {
       if (isCallPaused) {
         setState(STATES.PAUSED);
       } else {
@@ -763,9 +770,8 @@ async function startCall() {
 
   const greeting = "Hello and welcome to Aura Skincare, my name is Aria. How may I assist you with your orders or products today?";
   recordAgentUtterance(greeting); // Prime greeting in echo prevention history
-  const thisTurnId = ++currentTurnId;
   appendTranscriptMessage("agent", greeting);
-  await speakText(greeting, thisTurnId);
+  await speakText(greeting);
 }
 
 // RESET CALL (Refreshes conversation without ending call, while preserving history in JSON)
@@ -806,9 +812,8 @@ async function resetCall() {
   // 5. Speak fresh re-greeting
   const resetGreeting = "Conversation has been refreshed. How can I assist you with your orders or products now?";
   recordAgentUtterance(resetGreeting);
-  const thisTurnId = ++currentTurnId;
   appendTranscriptMessage("agent", resetGreeting);
-  await speakText(resetGreeting, thisTurnId);
+  await speakText(resetGreeting);
 }
 
 // END CALL & SHOW SUMMARY
@@ -893,6 +898,7 @@ window.simulateVoiceQuery = async function(text) {
   
   // 1. Instantly kill Aria's current audio
   stopAgentSpeaking();
+  isProcessingUtterance = false;
 
   // If paused, unpause so user turn can proceed smoothly
   if (isCallPaused) {
