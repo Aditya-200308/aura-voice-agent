@@ -201,7 +201,7 @@ async def process_user_turn(session_id: str, user_transcript: str) -> Dict[str, 
     # Try Gemini API if key is configured
     if api_key and api_key != "your_gemini_api_key_here":
         try:
-            return await asyncio.wait_for(_call_gemini_with_tools(session, user_transcript, api_key), timeout=4.0)
+            return await asyncio.wait_for(_call_gemini_with_tools(session, user_transcript, api_key), timeout=6.0)
         except Exception as e:
             logger.warning(f"Gemini API call failed or timed out, using resilient fallback engine: {e}")
             return _resilient_policy_engine(session, user_transcript)
@@ -216,7 +216,7 @@ async def _call_gemini_with_tools(session: ConversationSession, user_text: str, 
         from google import genai
         from google.genai import types
 
-        client = genai.Client(api_key=api_key, http_options={"timeout": 4000})
+        client = genai.Client(api_key=api_key)
         
         # Build contents from history
         contents = []
