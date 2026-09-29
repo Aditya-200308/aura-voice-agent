@@ -144,7 +144,7 @@ I chose a **100% Python backend (FastAPI) paired with a zero-build client-side i
 - **Maximum Reliability & Zero-Friction Evaluation**: Heavy JavaScript frontends (Next.js, React) introduce build step complexity, hydration overhead, and node version incompatibilities. A clean FastAPI architecture serves the complete application as a self-contained unit, starting up in milliseconds and deploying effortlessly on Render or Railway.
 - **Natural Indian Voice Quality**: Many voice demos use generic American or robotic browser voices. By leveraging Python's `edge-tts` with high-fidelity expressive neural models (`en-IN-NeerjaExpressiveNeural`), Aria sounds like a genuine Indian customer support specialist with warm, human cadence at zero API cost.
 - **Dual-Engine Resiliency**: The reasoning layer uses Gemini function calling for flexible natural language comprehension, backed by a deterministic guardrail engine. If an API key expires or network lag spikes, the agent seamlessly degrades rather than crashing or freezing.
-- **Modern AI-Assisted Engineering Workflow**: Developed in **Google's Antigravity IDE**, leveraging agentic pair-programming to rapidly scaffold the async backend, profile acoustic turn-taking, and run synthetic red-teaming dialogues (validating ₹2,500 COD ceilings, out-of-scope flight queries, and post-call CRM telemetry) while maintaining strict first-principles engineering ownership over every component.
+- **AI-Assisted Development (Section 6)**: Developed and profiled using **Google's Antigravity IDE**, enabling rapid prototyping and rigorous acoustic/guardrail testing while maintaining strict first-principles ownership of the codebase.
 
 ### 2. What was the most difficult part of the assignment, and how did you solve it?
 The most challenging aspect was **achieving low-latency conversational turn-taking and natural speech formatting**:
@@ -169,10 +169,3 @@ The most challenging aspect was **achieving low-latency conversational turn-taki
 4. **Observability, Guardrails & Human Handoff**:
    - Integrate telemetry tools (OpenTelemetry / Langfuse) to track First Token Latency (TTFT), tool call accuracy, and policy compliance rates.
    - Implement an automated sentiment analysis trigger that escalates the call to a human agent if customer frustration or unresolved intent exceeds a threshold.
-
----
-
-## 📦 Submission Details
-- **Role**: AI + Tech Intern / Full Stack AI Developer Intern
-- **Company**: Datastraw Technologies
-- **Candidate**: Aditya Suvarna
