@@ -4,7 +4,7 @@
 > **Role**: AI + Tech Intern / Full Stack AI Developer Intern — Datastraw Technologies  
 > **Application**: Aura Skincare AI Voice Customer Support Agent ("Aria")  
 > **Target Video Length**: ~3:30 – 4:00 Minutes  
-> **Core Engine**: Google Gemini 3.8 Flash (Async `client.aio` with 2.5s Timeout) + Web Audio API Turn-Taking
+> **Core Engine**: Google Gemini 4 Argon (Async `client.aio` with 2.5s Timeout) + Web Audio API Turn-Taking
 
 ---
 
@@ -22,12 +22,12 @@
 
 | Section | Timestamp | Action & Topics Covered |
 | :--- | :--- | :--- |
-| **Part 1** | **0:00 – 0:45** | **Introduction & UI Tour**: Project context, Gemini 3.8 Flash badge, Voice Orb, 4 Call Control buttons, and Evaluator Helper panel. |
+| **Part 1** | **0:00 – 0:45** | **Introduction & UI Tour**: Project context, Gemini 4 Argon badge, Voice Orb, 4 Call Control buttons, and Evaluator Helper panel. |
 | **Part 2** | **0:45 – 1:30** | **Live Voice Turn 1 (Order Lookup & Policy)**: Click *Start Call*, speak naturally: *"Tell me about order ORD-103"*. Aria fetches packing status via real-time tool calling. Follow up with shipping policy. |
 | **Part 3** | **1:30 – 2:15** | **Live Voice Turn 2 (Policy Guardrail)**: Speak: *"Can you please cancel order ORD-103?"*. Demonstrate atomic turn-taking, cancellation eligibility check, and instant confirmation. |
 | **Part 4** | **2:15 – 2:45** | **Live Voice Turn 3 (Out-of-Scope Guardrail)**: Speak: *"Can you book me a flight to Mumbai?"*. Aria enforces strict brand boundaries and gracefully steers back. |
 | **Part 5** | **2:45 – 3:20** | **Call Controls & Post-Call Telemetry**: Click *End Call & Generate Summary*. Inspect full transcript and structured CRM JSON outcome. |
-| **Part 6** | **3:20 – 4:00** | **Architecture & Engineering Deep-Dive**: Switch to README diagram; explain Gemini 3.8 Flash async client (`client.aio`), 2.5s fail-fast timeout, atomic turn locks, and edge-tts neural voice. |
+| **Part 6** | **3:20 – 4:00** | **Architecture & Engineering Deep-Dive**: Switch to README diagram; explain Gemini 4 Argon async client (`client.aio`), 2.5s fail-fast timeout, atomic turn locks, and edge-tts neural voice. |
 
 ---
 
@@ -47,7 +47,7 @@
 > *Before we start our live call, let's take a quick 15-second tour of the interface:*
 > *(Point mouse at each component)*
 > - *At the top, we have our **Dynamic State Indicator** and **Pulsing Voice Orb** with an animated audio equalizer.*
-> - *Notice the badge showing our primary LLM: **Google Gemini 3.8 Flash**, running on an asynchronous, fail-fast event loop.*
+> - *Notice the badge showing our primary LLM: **Google Gemini 4 Argon**, running on an asynchronous, fail-fast event loop.*
 > - *Directly beneath are our four **Call Control Buttons**: **Start Call** to initialize audio, **Pause Mic** to mute/unmute during a call, **Reset Call** to clear conversation context while preserving telemetry, and **End Call & Generate Summary**.*
 > - *On the right, we have an **Evaluator Helper Panel** with active orders from our mock database and **1-Click Action Chips** (like testing ORD-103 cancellation or return policies) so anyone can evaluate the system even in a quiet room.*
 > 
@@ -78,7 +78,7 @@
 **🗣️ Explain to the Viewer**:
 > *"As you can see, Aria retrieved Ananya Patel's order details from our database via real-time tool calling and answered our shipping policy query without delay.*
 > 
-> *Notice how cleanly the conversational turns handled the natural pause between phrases: our frontend utilizes an atomic utterance lock (`isProcessingUtterance`) that discards overlapping noise while processing, and our backend executes Gemini 3.8 Flash asynchronously via `client.aio` with a strict 2.5-second timeout and deterministic fallback net. There is zero speech overlap, and the event loop never stalls."*
+> *Notice how cleanly the conversational turns handled the natural pause between phrases: our frontend utilizes an atomic utterance lock (`isProcessingUtterance`) that discards overlapping noise while processing, and our backend executes Gemini 4 Argon asynchronously via `client.aio` with a strict 2.5-second timeout and deterministic fallback net. There is zero speech overlap, and the event loop never stalls."*
 
 ---
 
@@ -136,7 +136,7 @@
 > *The entire solution runs as a unified, high-performance stack:*
 > 1. **Client Tier**: Built with vanilla HTML5, CSS, and modern JavaScript with zero build tool bloat. It features the Web Speech API configured for Indian English (`en-IN`), an atomic `isProcessingUtterance` turn lock to prevent cross-talk, and an unlocked Web Audio API pipeline that eliminates browser autoplay blocks.
 > 2. **Backend API**: Powered by Python FastAPI with asynchronous endpoints for `/api/chat`, `/api/tts`, and `/api/end-call`.
-> 3. **Dual-Layer Intelligence**: Powered by **Google Gemini 3.8 Flash** using the asynchronous `client.aio` SDK with a strict 2.5-second timeout for snappy, sub-second responses, backed by an offline **Deterministic Guardrail Engine** that guarantees 100% policy compliance even if upstream model APIs experience latency spikes.
+> 3. **Dual-Layer Intelligence**: Powered by **Google Gemini 4 Argon** using the asynchronous `client.aio` SDK with a strict 2.5-second timeout for snappy, sub-second responses, backed by an offline **Deterministic Guardrail Engine** that guarantees 100% policy compliance even if upstream model APIs experience latency spikes.
 > 4. **Neural Speech Synthesis**: Uses Microsoft's expressive neural voice models via `edge-tts` to deliver a warm, human Indian persona at sub-second latency with zero per-minute API fees.*
 > 
 > *In line with Section 6 of the assessment guidelines, I utilized Google's Antigravity IDE and Gemini to rapidly prototype, debug, and stress-test this pipeline while maintaining strict first-principles engineering ownership.*
@@ -148,4 +148,4 @@
 ## 💡 Quick Tips for a Flawless Recording
 - **Tone**: Speak naturally and at a calm, conversational pace.
 - **Natural Pause**: When speaking (*"Can you tell me about order ORD-103?"*), pause naturally and let Aria finish speaking before moving to the next query. The atomic lock and async event loop handle state transitions seamlessly!
-- **Mouse Cues**: Hover over the **Start Call** button, the **Gemini 3.8 Flash badge**, the **State Pill**, and the **CRM JSON fields** to guide the evaluator's eyes.
+- **Mouse Cues**: Hover over the **Start Call** button, the **Gemini 4 Argon badge**, the **State Pill**, and the **CRM JSON fields** to guide the evaluator's eyes.

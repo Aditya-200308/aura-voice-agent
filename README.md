@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg)](https://fastapi.tiangolo.com/)
-[![Gemini](https://img.shields.io/badge/Google%20Gemini-3.8%20%2F%20Flash-8E75C2.svg)](https://ai.google.dev/)
+[![Gemini](https://img.shields.io/badge/Google%20Gemini-4%20Argon-8E75C2.svg)](https://ai.google.dev/)
 [![Voice](https://img.shields.io/badge/TTS-Aria%20Neural%20Voice-success.svg)](https://github.com/rany2/edge-tts)
 
 An end-to-end, browser-based AI Voice Customer Support Agent built for **Aura Skincare**, a premium organic Indian D2C brand. Built for the **Datastraw Technologies AI + Tech Intern / Full Stack AI Developer Intern** assessment.
@@ -113,7 +113,7 @@ cp .env.example .env
 Edit `.env`:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-4-argon
 PORT=8000
 ```
 *(Note: If you leave `GEMINI_API_KEY` blank, the app will run with its built-in rule-based guardrail fallback engine, guaranteeing 100% testability offline!)*
